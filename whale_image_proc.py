@@ -285,3 +285,4 @@ print("Total Time: {}".format(time.time()-start))
 # TODO Add Corner, Blob, Ridge Detection
 # TODO Add Scale Invariant Feature Transform
 # TODO Investigate more advanced techniques from https://en.wikipedia.org/wiki/Feature_extraction
+# TODO fix git
