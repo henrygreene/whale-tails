@@ -5,10 +5,10 @@ from PIL import Image
 import time
 import cv2
 import sklearn
-import torch
 
 
 def gauss_sum(xs, mu, sig, om):
+    """Sums Gaussians. Here mu is the vector of averages, sig the variances, and om the relative amplitudes."""
     assert xs.ndim == 1, "X must be a one dimensional array of inputs"
     ys = np.zeros(len(xs))
     for j, x in enumerate(xs):
@@ -17,6 +17,10 @@ def gauss_sum(xs, mu, sig, om):
 
 
 def grad_loss(xs, ys, ts, mu, sig, om):
+    """Calculates the gradient of the loss function for the gaussian fitting.
+    Loss: L = (f(xs[1],mu,sig,om) - ts[1])^2 + ... + (f(xs[m],mu,sig,om) - ts[m])^2
+    where xs are the grid points, ts are the data values at each grid point, f(xs[i],...) = ys[i] is the sum of
+    Gaussians, mu is the vector of averages, sig the variances, and om the relative amplitudes."""
     d_mu = np.zeros(len(mu))
     d_sig = np.zeros(len(mu))
     d_om = np.zeros(len(mu))
@@ -31,17 +35,24 @@ def grad_loss(xs, ys, ts, mu, sig, om):
                          * np.exp(-(xs-mu[j])**2/(2*sig[j]**2)) * (ys-ts)) \
                   + (np.sum(om)-256**2)
 
-        d_sig[j] = d_sig[j]*(sig[j]**2/(1+sig[j]**3))
-
-        # d_mu[j] = np.sum(om[j] * (xs - mu[j]) / sig[j] ** 2
-        #                  * np.exp(-(xs - mu[j]) ** 2 / (2 * sig[j] ** 2)) * (ys - ts))
-        # d_sig[j] = np.sum(om[j] * (xs - mu[j]) ** 2 / sig[j] ** 3
-        #                   * np.exp(-(xs - mu[j]) ** 2 / (2 * sig[j] ** 2)) * (ys - ts))
-        # d_om[j] = np.sum(np.exp(-(xs - mu[j]) ** 2 / (2 * sig[j] ** 2)) * (ys - ts))
+        d_sig[j] = d_sig[j]*(sig[j]**2/(1+sig[j]**3))  # Post derivative factor. Helps with the convergence rate, as the
+        #                                                derivative is very large for small or large sig values.
     return d_mu, d_sig, d_om
 
 
-def pixel_cluster_gauss(img, n=4, iters=100, prec_thresh=1e-7, iters_inner=25, smooth=1):
+def pixel_cluster_gauss(img, n=4, iters=100, prec_thresh=1e-7, iters_inner=25, smooth=3):
+    """Clusters pixel values by fitting a sum of n or less Gaussians to the distribution of pixel intensities.
+
+    img: array of pixel values. must be black and white (i.e. dimension n x m x 1) with integer pixel values between
+        0 to 255.
+    n: Positive integer. Number of Gaussians to start fitting process. After initial convergence, Gaussians that are too
+        wide and short will be discarded, and the fitting will be run again on the remaining Gaussians.
+    iters: Positive integer. Total permitted number of outer iterations (iterations of the outer for-loop)
+    prec_thresh: Positive float. Precision threshold for breaking the iterations. Used for both inner and outer loops.
+    iters_inner: Positive integer. Total number of iterations for each inner for-loop.
+    smooth: Odd number. Indicates size of moving average for smoothing of pixel distribution. A larger smooth factor
+        improves convergence rate of Gaussian fitting, but can damage quality of clustering if too high.
+    """
     pix_count = np.zeros(256)
     for j in range(256):
         pix_count[j] = np.count_nonzero(img == j)
@@ -173,7 +184,16 @@ def pixel_cluster_gauss(img, n=4, iters=100, prec_thresh=1e-7, iters_inner=25, s
     return mu, sig, om
 
 
-def pixel_cluster(img, num_bins=128, smooth=1):
+def pixel_cluster(img, num_bins=256, smooth=3):
+    """Naive clustering of pixels. Splits pixel intensity distribution on minima, and assigns pixel groups the location
+    of the intermediate maxima.
+
+    img: Array of pixel values. must be black and white (i.e. dimension n x m x 1) with integer pixel values between
+        0 to 255.
+    num_bins: Positive integer. Preferably divides 256. Number of bins for histogram distribution of pixel intensities.
+    smooth: Odd number. Indicates size of moving average for smoothing of pixel distribution. A larger smooth factor
+        decreases the number of maxima and minima, but can damage quality of clustering if too high.
+    """
     # Collects pixel counts
     bin_counts = np.zeros([num_bins])
     bins = [round(x*256.0/num_bins) for x in range(num_bins+1)]
@@ -220,67 +240,7 @@ def pixel_cluster(img, num_bins=128, smooth=1):
     ax3.imshow(new_img)
     return new_img
 
-
-# data_dir = "D:/Users/Craig/Documents/Large Data Files/Kaggle Whale Data/"
-data_dir = "C:/Users/Craig/Large Data Sets/"
-train_img_dir = data_dir + "train/train/"
-
-train_df = pd.read_csv(data_dir + "train.csv")
-
-t = time.time()
-ind = 0
-min_shape = [np.inf, np.inf]
-imgsarr = np.empty([0, 0, 0])
-npix = 256
-imgs_train = []
-for i in train_df.index:
-    img = Image.open(train_img_dir + train_df.Image[i])
-    imgsqr = img.resize((npix,npix),Image.ANTIALIAS)
-    if imgsqr.mode != 'L':
-        imgsqr = imgsqr.convert(mode='L')
-    imgs_train.append(imgsqr)
-    img.close()
-    if i > 20:
-        break
-elapse = time.time()-t
-print(elapse)
-
-# t = time.time()
-# U, s, V = np.linalg.svd(imgsarr, full_matrices=False)
-# elapse = time.time()-t
-# print(elapse)
-# test_proj = np.array(np.mat(V[0:250, :]).T*(np.mat(V[0:250, :])*np.mat(imgsarr[0, :]).T))
-# img = Image.open(train_img_dir + train_df.Image[11])
-# imgvec = np.array(img)
-
-# whale_id = train_df.Id[6]
-# img1 = np.asarray(imgs_train[6])
-# img1_edges = np.copy(img1)
-# cv2.Canny(img1, 500, 1500, img1_edges, 5, True)
-# img2 = np.asarray(imgs_train[701])
-# img2_edges = np.copy(img2)
-# cv2.Canny(img2, 500, 1500, img2_edges, 5, True)
-# img3 = pixel_cluster(img2, 256, 5)
-# img3_edges = np.copy(img3)
-# cv2.Canny(img3, 500, 1500, img3_edges, 5, True)
-#
-#
-# fig, axes = plt.subplots(3, 2, num=1, clear=True)
-# axes[0, 0].imshow(img1)
-# axes[0, 1].imshow(img1_edges)
-# axes[1, 0].imshow(img2)
-# axes[1, 1].imshow(img2_edges)
-# axes[2, 0].imshow(img3)
-# axes[2, 1].imshow(img3_edges)
-# fig.suptitle("Whale Id: {}".format(whale_id))
-#
-start = time.time()
-for k in range(10):
-    pixel_cluster_gauss(np.asarray(imgs_train[k]), 10, iters=100, prec_thresh=1e-6, iters_inner=25, smooth=3)
-    plt.savefig("../six_gauss_fit_img{}".format(k))
-print("Total Time: {}".format(time.time()-start))
-
-# TODO Port functions to individual file and comment
+# TODO Finish cursory comments
 # TODO Start machine learning framework
 # TODO Add Corner, Blob, Ridge Detection
 # TODO Add Scale Invariant Feature Transform
