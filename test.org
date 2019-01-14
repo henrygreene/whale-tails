@@ -1,0 +1,12 @@
+* TODO [#A] Learn org-mode
+** Learn Hierarchies
+details
+*** standalone sub-idea
+details
+** add additional info
+*** maybe
+*** a few
+*** sub-ideas
+**** how many levels?
+***** Infinite maybe
+* TODO [#B] Use org-mode
