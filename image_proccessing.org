@@ -1,0 +1,10 @@
+To-do list for whale_image_proc.py
+* Image Manipulation
+** TODO Determine various potential clustering methods
+* Feature Detection
+Need to consider other, more sophisticated additions.
+** TODO Edge detection
+** TODO Corner Detection
+** TODO Blob detection
+
+
