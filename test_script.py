@@ -67,3 +67,6 @@ for k in range(10):
     pixel_cluster_gauss(np.asarray(imgs_train[k]), 10, iters=100, prec_thresh=1e-6, iters_inner=25, smooth=3)
     plt.savefig("../six_gauss_fit_img{}".format(k))
 print("Total Time: {}".format(time.time()-start))
+
+
+# TODO Start machine learning framework

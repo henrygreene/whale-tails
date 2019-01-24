@@ -40,6 +40,10 @@ def grad_loss(xs, ys, ts, mu, sig, om):
     return d_mu, d_sig, d_om
 
 
+def gauss_fit(xs, ts, mu, sig, om, prec_thresh, iters_outer, iters_inner):
+    """Fits a sum of Gaussians to the data. Seeds with provided parameters."""
+    return
+
 def pixel_cluster_gauss(img, n=4, iters=100, prec_thresh=1e-7, iters_inner=25, smooth=3):
     """Clusters pixel values by fitting a sum of n or less Gaussians to the distribution of pixel intensities.
 
@@ -177,6 +181,7 @@ def pixel_cluster_gauss(img, n=4, iters=100, prec_thresh=1e-7, iters_inner=25, s
             break
     print("Time: {}".format(time.time()-t))
 
+
     ax2 = plt.subplot(212)
     ax2.bar(xs, pix_count)
     ax2.plot(xs, ys, 'r')
@@ -241,7 +246,6 @@ def pixel_cluster(img, num_bins=256, smooth=3):
     return new_img
 
 # TODO Finish cursory comments
-# TODO Start machine learning framework
 # TODO Add Corner, Blob, Ridge Detection
 # TODO Add Scale Invariant Feature Transform
 # TODO Investigate more advanced techniques from https://en.wikipedia.org/wiki/Feature_extraction
