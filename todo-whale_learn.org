@@ -1,0 +1,8 @@
+* Setup basic NNs
+** TODO Pixel data NN
+** TODO Basic feature data NN
+Takes corners, edges, and blobs
+** TODO Advanced feature data NN
+Need to develop more advanced features to process
+** TODO Look into rotation invariant NNs
+
